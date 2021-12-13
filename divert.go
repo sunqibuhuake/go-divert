@@ -11,6 +11,14 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+
+type Handle struct {
+	sync.Mutex
+	windows.Handle
+	rOverlapped windows.Overlapped
+	wOverlapped windows.Overlapped
+	Open        uint16
+}
 var once = sync.Once{}
 
 func GetVersionInfo() (ver string, err error) {
@@ -32,57 +40,6 @@ func GetVersionInfo() (ver string, err error) {
 
 	ver = strings.Join([]string{strconv.Itoa(int(major)), strconv.Itoa(int(minor))}, ".")
 	return
-}
-
-func ioControlEx(h windows.Handle, code CtlCode, ioctl unsafe.Pointer, buf *byte, bufLen uint32, overlapped *windows.Overlapped) (iolen uint32, err error) {
-	err = windows.DeviceIoControl(h, uint32(code), (*byte)(ioctl), uint32(unsafe.Sizeof(ioCtl{})), buf, bufLen, &iolen, overlapped)
-	if err != windows.ERROR_IO_PENDING {
-		return
-	}
-
-	err = windows.GetOverlappedResult(h, overlapped, &iolen, true)
-	return
-}
-
-func ioControl(h windows.Handle, code CtlCode, ioctl unsafe.Pointer, buf *byte, bufLen uint32) (iolen uint32, err error) {
-	event, _ := windows.CreateEvent(nil, 0, 0, nil)
-
-	overlapped := windows.Overlapped{
-		HEvent: event,
-	}
-
-	iolen, err = ioControlEx(h, code, ioctl, buf, bufLen, &overlapped)
-
-	windows.CloseHandle(event)
-	return
-}
-
-type Handle struct {
-	sync.Mutex
-	windows.Handle
-	rOverlapped windows.Overlapped
-	wOverlapped windows.Overlapped
-	Open        uint16
-}
-
-func (h *Handle) recvLoop(packetChan chan<- *Packet) {
-	for h.Open == HandleOpen {
-		addr := Address{}
-		buff := make([]byte, PacketBufferSize)
-
-		_, err := h.Recv(buff, &addr)
-		if err != nil {
-			close(packetChan)
-			break
-		}
-
-		packet := &Packet{
-			Raw:  buff,
-			Addr: &addr,
-		}
-
-		packetChan <- packet
-	}
 }
 
 func (h *Handle) Recv(buffer []byte, address *Address) (uint, error) {
@@ -241,5 +198,6 @@ func (h *Handle) SetParam(p Param, v uint64) error {
 
 	return nil
 }
+
 
 

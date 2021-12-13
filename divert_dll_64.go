@@ -15,8 +15,14 @@ import (
 )
 
 var (
-	winDivert     = (*windows.DLL)(nil)
-	winDivertOpen = (*windows.Proc)(nil)
+	winDivert     					= (*windows.DLL)(nil)
+	winDivertOpen 					= (*windows.Proc)(nil)
+	winDivertClose  				= (*windows.Proc)(nil)
+	winDivertRecv               	= (*windows.Proc)(nil)
+	winDivertSend                 	= (*windows.Proc)(nil)
+	winDivertHelperCalcChecksums  	= (*windows.Proc)(nil)
+	winDivertHelperEvalFilter     	= (*windows.Proc)(nil)
+	//winDivertHelperCheckFilter    	= (*windows.Proc)(nil)
 )
 
 func Open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, err error) {
@@ -28,12 +34,27 @@ func Open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, 
 		}
 		winDivert = dll
 
+		// WinDivertOpen
 		proc, er := winDivert.FindProc("WinDivertOpen")
 		if er != nil {
 			err = er
 			return
 		}
 		winDivertOpen = proc
+
+		// WinDivertHelperCalcChecksums
+		winDivertHelperCalcChecksums,  er = winDivert.FindProc("WinDivertHelperCalcChecksums")
+		if er != nil {
+			err = er
+			return
+		}
+
+		// WinDivertHelperCheckFilter
+		//winDivertHelperCheckFilter,  er = winDivert.FindProc("WinDivertHelperCheckFilter")
+		//if er != nil {
+		//	err = er
+		//	return
+		//}
 
 		vers := map[string]struct{}{
 			"2.0": {},
@@ -112,26 +133,32 @@ func open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, 
 }
 
 
-func CalcCheckSums(packet *Packet) {
-	calcProc, err := winDivert.FindProc("WinDivertHelperCalcChecksums")
-	if err != nil {
-		panic(err)
-		return
-	}
-
-	success,_,err := calcProc.Call(uintptr(unsafe.Pointer(&packet.Raw[0])), uintptr(len(packet.Raw)), uintptr(unsafe.Pointer(&packet.Addr)),uintptr(0))
-
-	fmt.Println(success)
-
-	//if &success != nil {
-	//	var res = (*bool)(unsafe.Pointer(success))
-	//	fmt.Println(strconv.FormatBool(*res))
-	//}
-
-	//if err != nil {
-	//	fmt.Println("calc 调用错误：" + err.Error())
-	//} else {
-	//	fmt.Println("calc 调用成功")
-	//	//fmt.Println("calc 调用成功: ", strconv.FormatBool(*res))
-	//}
+func (h *Handle) HelperCalcChecksum(packet *Packet) {
+	winDivertHelperCalcChecksums.Call(
+		uintptr(unsafe.Pointer(&packet.Raw[0])),
+		uintptr(len(packet.Raw)),
+		uintptr(unsafe.Pointer(&packet.Addr)),
+		uintptr(0))
 }
+
+//
+//func HelperCheckFilter(filter string) (bool, error) {
+//	var errorPos uint
+//
+//	filterBytePtr, _ := syscall.BytePtrFromString(filter)
+//
+//	success, _, _ := winDivertHelperCheckFilter.Call(
+//		uintptr(unsafe.Pointer(filterBytePtr)),
+//		uintptr(0),
+//		uintptr(0), // Not implemented yet
+//		uintptr(unsafe.Pointer(&errorPos)))
+//
+//	if success == 1 {
+//		return true, nil
+//	}
+//	return false, errors.New("invalid filter")
+//}
+//
+//
+
+
