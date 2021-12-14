@@ -13,9 +13,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
+
 
 func Open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, err error) {
 	once.Do(func() {
@@ -44,6 +46,7 @@ func Open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, 
 			}
 
 			ver = strings.Join([]string{strconv.Itoa(int(major)), strconv.Itoa(int(minor))}, ".")
+			fmt.Println("WinDivert Version: " + ver)
 			return
 		}()
 		if er != nil {
@@ -86,5 +89,19 @@ func open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, 
 		wOverlapped: windows.Overlapped{
 			HEvent: wEvent,
 		},
+		Open: HandleOpen,
 	}, nil
 }
+
+
+func HelperCalcChecksum(packet *Packet, flags uint64) bool {
+	result := C.WinDivertHelperCalcChecksums(
+		unsafe.Pointer(&packet.Raw[0]),
+		C.uint(len(packet.Raw)),
+		(*C.WINDIVERT_ADDRESS)(unsafe.Pointer(&packet.Addr)),
+		C.uint64_t(flags),
+	)
+	return result == 1
+}
+
+

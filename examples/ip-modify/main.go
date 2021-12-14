@@ -6,27 +6,33 @@ import (
 	"net"
 )
 
-func checkPacket(handle *divert.Handle, packetChan <-chan *divert.Packet) {
-	for packet := range packetChan {
 
+var hasOutPacket = false
+func checkPacket(handle *divert.Handle, packetChan <-chan *divert.Packet) {
+	var originalDstIp = ""
+	var proxyHostIp = net.ParseIP("43.154.110.254")
+	for packet := range packetChan {
 		packet.String()
 		if packet.Addr.IsOutbound() {
-			fmt.Println("OUT")
-			packet.SetDstIP(net.ParseIP("43.154.110.254"))
+			hasOutPacket = true
+			originalDstIp = packet.DstIP().To4().String()
+			packet.SetDstIP(proxyHostIp)
 		} else {
-			fmt.Println("IN")
-			packet.SetSrcIP(net.ParseIP("192.168.1.104"))
+			if hasOutPacket != true {
+				continue
+			}
+			if len(originalDstIp) > 0 {
+				packet.SetSrcIP(net.ParseIP(originalDstIp))
+			}
 		}
-
-		handle.HelperCalcChecksum(packet)
+		divert.HelperCalcChecksum(packet, 0)
 		handle.Send(packet.Raw, packet.Addr)
 	}
 }
 
 func main() {
-	var filter = "(outbound  and tcp.DstPort == 7777) or (inbound  and  tcp.SrcPort == 7777)"
+	var filter = "(outbound  and tcp.DstPort == 1800) or (inbound  and  tcp.SrcPort == 1800)"
 	handle, err := divert.Open(filter, divert.LayerNetwork, divert.PriorityLowest, 0)
-
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -40,7 +46,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer handle.Close()
-	checkPacket(handle, packetChan)
+	//defer handle.Close()
+	 checkPacket(handle, packetChan)
 
 }

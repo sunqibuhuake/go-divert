@@ -20,7 +20,7 @@ func checkPacket(handle *divert.Handle, packetChan <-chan *divert.Packet) {
 				packet.Raw = bytes.ReplaceAll(packet.Raw, target, hack)
 				fmt.Println("Modified:")
 				fmt.Println(string(packet.Raw))
-				handle.HelperCalcChecksum(packet)
+				divert.HelperCalcChecksum(packet,0)
 			}
 		} else {
 			fmt.Println("IN")

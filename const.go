@@ -84,3 +84,15 @@ func (p Param) String() string {
 		return ""
 	}
 }
+
+// copy from github.com/tboerc/divert-go
+const (
+	HandleOpen     = 1
+	HandleShutdown = 2
+	HandleClosed   = 3
+	HandleEnded    = 4
+)
+const (
+	PacketBufferSize   = 1500
+	PacketChanCapacity = 256
+)
