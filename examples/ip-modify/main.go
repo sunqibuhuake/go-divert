@@ -14,10 +14,12 @@ func checkPacket(handle *divert.Handle, packetChan <-chan *divert.Packet) {
 	for packet := range packetChan {
 		packet.String()
 		if packet.Addr.IsOutbound() {
+			fmt.Println("OUT")
 			hasOutPacket = true
 			originalDstIp = packet.DstIP().To4().String()
 			packet.SetDstIP(proxyHostIp)
 		} else {
+			fmt.Println("IN")
 			if hasOutPacket != true {
 				continue
 			}

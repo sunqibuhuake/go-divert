@@ -49,12 +49,6 @@ func Open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, 
 			return
 		}
 
-		// WinDivertHelperCheckFilter
-		//winDivertHelperCheckFilter,  er = winDivert.FindProc("WinDivertHelperCheckFilter")
-		//if er != nil {
-		//	err = er
-		//	return
-		//}
 
 		vers := map[string]struct{}{
 			"2.0": {},
@@ -133,32 +127,17 @@ func open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, 
 }
 
 
-func (h *Handle) HelperCalcChecksum(packet *Packet) {
-	winDivertHelperCalcChecksums.Call(
+func HelperCalcChecksum(packet *Packet, flags uint64) bool {
+	result, _, err := winDivertHelperCalcChecksums.Call(
 		uintptr(unsafe.Pointer(&packet.Raw[0])),
 		uintptr(len(packet.Raw)),
 		uintptr(unsafe.Pointer(&packet.Addr)),
-		uintptr(0))
+		uintptr(flags))
+
+	if err != nil {
+		return false
+	}
+
+	return result == 1
 }
-
-//
-//func HelperCheckFilter(filter string) (bool, error) {
-//	var errorPos uint
-//
-//	filterBytePtr, _ := syscall.BytePtrFromString(filter)
-//
-//	success, _, _ := winDivertHelperCheckFilter.Call(
-//		uintptr(unsafe.Pointer(filterBytePtr)),
-//		uintptr(0),
-//		uintptr(0), // Not implemented yet
-//		uintptr(unsafe.Pointer(&errorPos)))
-//
-//	if success == 1 {
-//		return true, nil
-//	}
-//	return false, errors.New("invalid filter")
-//}
-//
-//
-
 
