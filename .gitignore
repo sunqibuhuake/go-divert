@@ -27,4 +27,6 @@ Temporary Items
 .apdisk
 
 .idea
-/example
+#example
+
+build
