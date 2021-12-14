@@ -15,7 +15,6 @@ type IPv4Header struct {
 
 func NewIPv4Header(raw []byte) *IPv4Header {
 	hdrLen := (raw[0] & 0xf) << 2
-	fmt.Printf("Header Length: %d\n", hdrLen)
 	return &IPv4Header{
 		Raw: raw[:hdrLen],
 	}
