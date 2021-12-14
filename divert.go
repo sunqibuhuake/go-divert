@@ -134,11 +134,11 @@ func (h *Handle) End() (err error) {
 
 	err = h.Shutdown(ShutdownBoth)
 	if err != nil {
-		return
+		return err
 	}
 	err = h.Close()
 	if err != nil {
-		return
+		return err
 	}
 
 	return nil
